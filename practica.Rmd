@@ -1,0 +1,96 @@
+---
+title: "Pràctica"
+author: "Group 02"
+date: '2022-03-18'
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r requeriments}
+if(!require(tidyverse)) install.packages("tidyverse")
+if(!require(ggplot2)) install.packages("ggplot2")
+if(!require(dplyr)) install.packages("dplyr")
+
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(forcats)
+library(ggthemr)
+ggthemr("fresh")
+```
+
+```{r importar_dades}
+path <- file.path(getwd(), "any_drinking.csv")
+any_drinking=read.csv(path)
+view(any_drinking)
+```
+
+```{r PART1_ex1}
+any_drinking_ex1 <- any_drinking %>%
+                        select(state, location, ends_with("2010")) 
+head(any_drinking_ex1, 5)
+```
+
+```{r PART1_ex2.a}
+any_drinking_ex2 <- any_drinking %>%
+                      select(state, location, ends_with("2010")) %>%
+                      filter(males_2010 != "NA", females_2010 != "NA") %>%
+                      mutate(DIF_SEXE_2010 =  abs(males_2010 - females_2010))
+
+head(any_drinking_ex2, 10)
+str(any_drinking_ex2)
+```
+```{r PART1_ex2.b}
+ggthemr("fresh")
+ggplot(any_drinking_ex2, aes(DIF_SEXE_2010)) + geom_histogram(binwidth = 0.3) + xlab("Diferència entre sexes 2010") + ylab("Freqüència") + ggtitle("Distribució de la variable DIF_SEXE_2010") 
+```
+```{r PART1_ex3.a}
+diff_less_than_5 = any_drinking_ex2 %>% 
+                      filter(DIF_SEXE_2010 <= 5)
+```
+
+
+```{r PART1_ex3.b}
+diff_less_than_5 %>%
+  mutate(location = fct_reorder(location, DIF_SEXE_2010)) %>%
+                          ggplot(aes(DIF_SEXE_2010, location)) +
+                            geom_bar(stat="identity", alpha=.8, width=.4) +
+                            xlab("Prevalença (DIF_SEXE_2010)") + ggtitle("Diferència absoluta de la prevalença") + 
+                            ylab("Ubicació") 
+```
+```{r PART1_ex3.c}
+any_drinking_ex2 %>% 
+                  group_by(state) %>% 
+                  summarise(mitjana = mean(DIF_SEXE_2010)) %>%
+                  filter(mitjana > 15) %>%
+                  mutate(state = fct_reorder(state, mitjana)) %>%
+                    ggplot(aes(state, mitjana)) +
+                    geom_col() + xlab("Diferència entre sexes 2010") + ylab("Freqüència") + coord_flip() + theme(text = element_text(size=9)) + ggtitle("Estats amb la diferènica en la mitjana de la prevalença més gran a 15")
+```
+```{r PART2_ex1}
+path <- file.path(getwd(), "binge_drinking.csv")
+binge_drinking = read.csv(path)
+County_DATA = binge_drinking %>%filter(grepl("County",location))
+head(County_DATA, 5)
+```
+
+```{r PART2_ex2}
+County_DATA %>% 
+                select(state, both_sexes_2012) %>%
+                arrange(desc(both_sexes_2012)) %>%
+                head(5) %>%
+                ggplot(aes(state, both_sexes_2012)) + geom_col() + coord_flip() + xlab("Estat") + ylab("Prevalença d'ambós sexes en el 2012") + ggtitle("Els 5 estats amb prevalença màxima per ambós sexes en 2012")
+```
+
+```{r PART2_ex2.b}
+df8 = County_DATA %>% select(location, starts_with('both_sexes'))
+df8 = df8 %>% filter(location == "Little River County" | location == "Bacon County")
+df9 = df8 %>% gather("both_sexes_historical", "prevalença", 2:12)
+
+ggplot(df9,aes(fill=location,both_sexes_historical,prevalença)) + geom_col(position="dodge") + coord_flip() + ylab("Pevalença") + xlab("Historial d'ambós sexes") + scale_fill_discrete("Comtat") + ggtitle("Prevalença al llarg dels anys per ambdós sexes")
+```
+
+
